@@ -33,11 +33,12 @@ log.event({});
   "parts": [
     {"string": "I got an error"},
     {"error": {}},
-    {"object": {}}
+    {"object": {}},
+    {"event": {}}
   ]
 }
 ```
 
 ```text
-2018-something-something    DEBUG   {str}I got an error  {err}{}  {obj}{}
+2018-something-something    debug   {str}I got an error  {err}{}  {obj}{} {event}{}
 ```
