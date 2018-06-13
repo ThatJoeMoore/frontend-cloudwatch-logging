@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<!--
+  ~  @license
+  ~    Copyright 2018 Brigham Young University
+  ~
+  ~    Licensed under the Apache License, Version 2.0 (the "License");
+  ~    you may not use this file except in compliance with the License.
+  ~    You may obtain a copy of the License at
+  ~
+  ~        http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~    Unless required by applicable law or agreed to in writing, software
+  ~    distributed under the License is distributed on an "AS IS" BASIS,
+  ~    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~    See the License for the specific language governing permissions and
+  ~    limitations under the License.
+  -->
+
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Logging Demo</title>
+
+    <script type="module">
+        import * as logger from '../api/index.js';
+        import * as constants from './constants.js';
+        import {initRestLogger} from "./index.js";
+        import {html, render} from 'https://dev.jspm.io/lit-html/lit-html.js';
+
+        const messageHolder = document.querySelector('.messages');
+
+        initRestLogger({url: 'http://localhost:8080/logs', maxSecondsBetweenBatches: 60});
+
+        document.addEventListener(constants.EVENT_MESSAGE, e => {
+            appendToMessages(messageHolder, e.detail);
+        });
+
+        const messages = [];
+
+        function appendToMessages(holder, message) {
+            messages.push(message);
+            render(html`
+                <thead><tr><th>Timestamp</th><th>Level</th><th>Message</th></tr></thead>
+               ${messages.map(stampMessage)}
+            `, holder)
+        }
+
+        function stampMessage(message) {
+            return html`
+                <tr class="message msg-level-${message.level}">
+                    <td class="msg-timestamp">${message.timestamp.toISOString()}</td>
+                    <td class="msg-level">${message.level}</td>
+                    <td class="msg-parts">
+                        ${message.parts.map(stampMessagePart)}
+                    </td>
+                </tr>
+            `
+        }
+
+        function stampMessagePart(part) {
+            if (typeof part === 'string') {
+                return html`<span>${part}</span>`;
+            } else if (part instanceof Error) {
+                return html`<pre><code>${part.message}\n${part.stack}</code></pre>`;
+            } else {
+                return html`<pre><code>${JSON.stringify(part, null, 2)}</code></pre>`;
+            }
+        }
+
+        const textForm = document.getElementById('text-form');
+        const textMessage = textForm.querySelector('[name=message]');
+        const textLevel = textForm.querySelector('[name=level]');
+
+        textForm.addEventListener('submit', e => {
+            const level = textLevel.value || 'log';
+            if (textMessage.value) {
+                logger[level](textMessage.value);
+                textMessage.value = '';
+            }
+            e.preventDefault();
+        });
+
+        const logError = document.getElementById('log-exception');
+        logError.addEventListener('click', () => {
+            logger.error(`Hey, I've had an error!`, new Error('Test Error'));
+        });
+
+
+        const logObject = document.getElementById('log-object');
+        logObject.addEventListener('click', () => {
+            logger.log(`Here's an object:`, {foo: 'bar'});
+        });
+
+        const logEvent = document.getElementById('log-event');
+        logEvent.addEventListener('click', logger.event);
+
+    </script>
+    <style>
+        .messages {
+            text-align: left;
+        }
+        .messages th, .messages td {
+            padding: 0.15em 0.5em;
+            border-bottom: 1px solid #002e5d;
+        }
+        .msg-parts {
+            display: flex;
+            flex-direction: row;
+            align-items: start;
+        }
+        .msg-parts > * {
+            margin-left: 0.25em;
+            margin-right: 0.25em;
+        }
+        .message.msg-level-debug {
+            background-color: #eeeeee;
+            color: #676767;
+        }
+        .message.msg-level-default {
+            background-color: azure;
+        }
+        .message.msg-level-info {
+            background-color: azure;
+        }
+        .message.msg-level-warn {
+            background-color: burlywood;
+        }
+        .message.msg-level-error {
+            background-color: indianred;
+        }
+    </style>
+</head>
+<body>
+<h1>Send a message!</h1>
+<div class="send">
+    <div>
+        <form id="text-form">
+            <input name="message" type="text" placeholder="Message"/>
+            <select name="level">
+            <option>debug</option>
+            <option value="log" selected>default</option>
+            <option>info</option>
+            <option>warn</option>
+            <option>error</option>
+            </select>
+            <input type="submit" value="Send!">
+        </form>
+    </div>
+    <div>
+        <button id="log-exception">Log An Error</button>
+        <button id="log-object">Log An Object</button>
+        <button id="log-event">Log An Event</button>
+    </div>
+</div>
+<h1>Log Messages</h1>
+<div class="messages"></div>
+
+</body>
+</html>

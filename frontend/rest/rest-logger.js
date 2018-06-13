@@ -18,6 +18,7 @@
 import {EVENT_MESSAGE} from "./constants.js";
 import {FlushingQueue} from "./flushing-queue.js";
 import {HttpLogSender} from "./send.js";
+import {formatMessage} from "./format-messages.js";
 
 export const DEFAULT_BATCH_SIZE = 20;
 export const DEFAULT_MAX_SECONDS_BETWEEN_BATCHES = 10;
@@ -68,8 +69,7 @@ export class RestLogger {
 
         this.__unloadListener = () => this.__onUnload();
 
-        window.addEventListener('unload', this.__unloadListener, false);
-
+        window.addEventListener('unload', this.__unloadListener);
     }
 
     disconnect() {
@@ -80,13 +80,13 @@ export class RestLogger {
             this.__listener = undefined;
         }
         if (this.__unloadListener) {
-            document.removeEventListener('unload', this.__unloadListener, false);
+            window.removeEventListener('unload', this.__unloadListener);
             this.__unloadListener = undefined;
         }
     }
 
     onLogMessage(e) {
-        this.__queue.enqueue(e.detail);
+        this.__queue.enqueue(formatMessage(e.detail));
     }
 
     __dispatchBatch(messages) {
@@ -99,7 +99,7 @@ export class RestLogger {
 
     __onUnload() {
         this.disconnect();
-        const items = this.__queue.items();
+        const items = this.__queue.items;
         if (items.length !== 0) {
             this.__sender.sendBlocking(items);
         }
