@@ -1,0 +1,116 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+
+Description: Handel-created CloudWatch Logger application
+
+Resources:
+  LambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: {{apiName}}
+      Path: "/services/"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service:
+              - "lambda.amazonaws.com"
+            Action:
+            - "sts:AssumeRole"
+  LambdaPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: {{apiName}}
+      Roles:
+      - !Ref LambdaRole
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+        - Effect: Allow
+          Action:
+          - 'logs:CreateLogGroup'
+          - 'logs:CreateLogStream'
+          - 'logs:PutLogEvents'
+          Resource:
+          - '*'
+        - Effect: Allow
+          Action:
+          - 'ssm:DescribeParameters'
+          Resource:
+          - '*'
+        - Effect: Allow
+          Action:
+          - 'ssm:GetParameters'
+          - 'ssm:GetParameter'
+          Resource:
+          - 'arn:aws:ssm:us-west-2:398230616010:parameter/handel.global*'
+#        - Effect: Allow
+#          Action:
+#          - 'ssm:PutParameter'
+#          - 'ssm:DeleteParameter'
+#          - 'ssm:DeleteParameters'
+#          Resource:
+#          - 'arn:aws:ssm:us-west-2:398230616010:parameter/oauth-token-lambda.dev*'
+
+  LambdaFunctionApiEventPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:invokeFunction
+      Principal: apigateway.amazonaws.com
+      FunctionName:
+        Ref: LambdaFunction
+      SourceArn:
+        Fn::Sub:
+        - arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${__ApiId__}/*/*/*
+        - __ApiId__:
+            Ref: RestApi
+  LambdaFunction:
+    Type: AWS::Lambda::Function
+    DependsOn:
+    - LambdaPolicy # Explicitly required for VPC lambdas, otherwise policy isn't ready and attached before Lambda creation
+    Properties:
+      Code:
+        S3Bucket: {{s3Bucket}}
+        S3Key: {{s3Key}}
+      Description: This lambda will output logs to cloudwatch
+      FunctionName: {{apiName}}-logger-lambda
+      MemorySize: 128
+      Handler: lambda-logger.handler
+      Role: !GetAtt LambdaRole.Arn
+      Timeout: 8
+      Runtime: python3.6
+  Deployment:
+    Type: AWS::ApiGateway::Deployment
+    Properties:
+      RestApiId:
+        Ref: RestApi
+      Description: 'Deployment for {{apiName}}'
+      StageName: dev
+  RestApi:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Description: This lambda will output logs to cloudwatch
+      Name: {{apiName}}
+      Body:
+        info:
+          version: '1.0'
+          title: cloudwatch-logger-lambda
+        paths:
+          "/":
+            "post":
+              x-amazon-apigateway-integration:
+                httpMethod: POST
+                type: aws_proxy
+                uri:
+                  Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaFunction.Arn}/invocations
+              responses: {}
+        swagger: '2.0'
+
+Outputs:
+  RestApiId:
+    Value:
+      Ref: RestApi
+  DeploymentId:
+    Value:
+      Ref: Deployment
