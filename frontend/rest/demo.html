@@ -29,7 +29,7 @@
 
         const messageHolder = document.querySelector('.messages');
 
-        initRestLogger({url: 'http://localhost:8080/logs', maxSecondsBetweenBatches: 60});
+        initRestLogger({url: 'https://xqs43ihhw8.execute-api.us-west-2.amazonaws.com/dev', maxSecondsBetweenBatches: 10});
 
         document.addEventListener(constants.EVENT_MESSAGE, e => {
             appendToMessages(messageHolder, e.detail);
