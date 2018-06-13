@@ -18,5 +18,10 @@ import { ServiceConfig } from 'handel-extension-api';
 
 export interface LoggingServiceConfig extends ServiceConfig {
 	log_group_name?: string;
+	custom_domains?: CustomDomain[]
+}
 
+export interface CustomDomain {
+	dns_name: string;
+	https_certificate: string;
 }
