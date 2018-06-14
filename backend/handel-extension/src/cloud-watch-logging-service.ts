@@ -98,6 +98,9 @@ export class CloudWatchLoggingService implements ServiceDeployer {
 	// 	return undefined;
 	// }
 
+	// TODO create cloudwatch log group and send logs there
+	// TODO put API gateway on custom domains if provided
+	// TODO figure out what to return
 	public async deploy(ownServiceContext: ServiceContext<LoggingServiceConfig>, ownPreDeployContext: PreDeployContext, dependenciesDeployContexts: DeployContext[]): Promise<DeployContext> {
 
 		const stackName = ownServiceContext.stackName();
@@ -125,7 +128,8 @@ export class CloudWatchLoggingService implements ServiceDeployer {
 	// public async unBind(ownServiceContext: ServiceContext<ServiceConfig>): Promise<IUnBindContext> {
 	// 	return undefined;
 	// }
-	//
+
+	// TODO implement
 	// public async unPreDeploy(ownServiceContext: ServiceContext<ServiceConfig>): Promise<IUnPreDeployContext> {
 	// 	return undefined;
 	// }
