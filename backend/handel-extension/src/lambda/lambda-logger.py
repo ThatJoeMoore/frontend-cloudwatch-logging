@@ -1,4 +1,4 @@
-
+import json
 def handler(event, context):
 
     logs = []
@@ -20,8 +20,9 @@ def handler(event, context):
                 "parts": parts
             })
     elif 'Content-Type' in event['headers'] and event['headers']['Content-Type'] == 'application/json':
-        logs = event['body']
+        logs = json.loads(event['body'])
 
+    successfull_logs = 0
     for log in logs:
         log_string = "{}\t{}".format(log['timestamp'], log['level'])
         for part in log['parts']:
@@ -32,12 +33,13 @@ def handler(event, context):
             elif 'error' in part:
                 log_string += "\t{}".format(part['error'])
         print(log_string)
+        successfull_logs += 1
+
+    body_str = '{"message": "Successfully logged ' + str(successfull_logs) + ' log entries"}'
 
     return {
-        'isBase64Encoded': False,
-        'statusCode': 200,
-        'headers': {},
-        'body': {
-            'message': 'Hello from Lambda!'
-        }
+        "isBase64Encoded": False,
+        "statusCode": 200,
+        "headers": {"Content-Type": "application/json"},
+        "body": body_str
     }
